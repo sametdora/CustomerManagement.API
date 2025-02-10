@@ -1,13 +1,12 @@
-﻿using CustomerManagement.Domain.Entities;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using CustomerManagement.Domain.Entities;
 
 namespace CustomerManagement.Domain.Interfaces
 {
     public interface ICustomerRepository
     {
-        Task<Customer> GetCustomerByIdAsync(int id);
         Task<int> CreateCustomerAsync(Customer customer);
+        Task<Customer> GetCustomerByIdAsync(int id);
         Task<int> UpdateCustomerAsync(Customer customer);
         Task<int> DeleteCustomerAsync(int id);
     }
