@@ -1,8 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using System.Data;
-using Dapper;
+using System.Threading.Tasks;
 using CustomerManagement.Domain.Entities;
 using CustomerManagement.Domain.Interfaces;
+using System.Data.Common;
 
 namespace CustomerManagement.Infrastructure.Repositories
 {
@@ -14,18 +17,35 @@ namespace CustomerManagement.Infrastructure.Repositories
         {
             _connectionString = connectionString;
         }
-
+        private readonly SqlConnection _dbConnection;
+        public CustomerRepository(SqlConnection dbConnection)
+        {
+            _dbConnection = dbConnection;
+        }
         public async Task<int> CreateCustomerAsync(Customer customer)
         {
             using (IDbConnection dbConnection = new SqlConnection(_connectionString))
             {
-                var parameters = new
-                {
-                    customer.Name,
-                    customer.Email,
-                    customer.Phone
-                };
+                string customerJson = JsonConvert.SerializeObject(customer);
+
+                var parameters = new { CustomerData = customerJson };
+
                 return await dbConnection.ExecuteScalarAsync<int>("usp_CreateCustomer", parameters, commandType: CommandType.StoredProcedure);
+            }
+        }
+
+        public async Task<Customer> GetCustomerByIdAsync(int id)
+        {
+            string customerJson = await GetCustomerJsonByIdAsync(id);
+            return string.IsNullOrEmpty(customerJson) ? null : JsonConvert.DeserializeObject<Customer>(customerJson);
+        }
+
+        public async Task<string> GetCustomerJsonByIdAsync(int id)
+        {
+            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
+            {
+                var parameters = new { Id = id };
+                return await dbConnection.QueryFirstOrDefaultAsync<string>("usp_GetCustomerById", parameters, commandType: CommandType.StoredProcedure);
             }
         }
 
@@ -33,13 +53,14 @@ namespace CustomerManagement.Infrastructure.Repositories
         {
             using (IDbConnection dbConnection = new SqlConnection(_connectionString))
             {
+                string customerJson = JsonConvert.SerializeObject(customer);
+
                 var parameters = new
                 {
                     customer.Id,
-                    customer.Name,
-                    customer.Email,
-                    customer.Phone
+                    CustomerData = customerJson
                 };
+
                 return await dbConnection.ExecuteAsync("usp_UpdateCustomer", parameters, commandType: CommandType.StoredProcedure);
             }
         }
@@ -50,15 +71,6 @@ namespace CustomerManagement.Infrastructure.Repositories
             {
                 var parameters = new { Id = id };
                 return await dbConnection.ExecuteAsync("usp_DeleteCustomer", parameters, commandType: CommandType.StoredProcedure);
-            }
-        }
-
-        public async Task<Customer> GetCustomerByIdAsync(int id)
-        {
-            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
-            {
-                var parameters = new { Id = id };
-                return await dbConnection.QueryFirstOrDefaultAsync<Customer>("usp_GetCustomerById", parameters, commandType: CommandType.StoredProcedure);
             }
         }
     }

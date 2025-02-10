@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using CustomerManagement.Domain.Entities;
 using CustomerManagement.Domain.Interfaces;
+using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +25,12 @@ namespace CustomerManagement.Application.Commands
                 Phone = request.Phone
             };
 
+            string customerJson = JsonConvert.SerializeObject(customer);
+
+            var parameters = new { CustomerData = customerJson };
+
             return await _customerRepository.CreateCustomerAsync(customer);
         }
     }
 }
+
